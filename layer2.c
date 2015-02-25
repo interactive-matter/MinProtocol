@@ -9,7 +9,7 @@
  */ 
 
 #include "serial.h"
-#include "min/min.h"
+#include "min.h"
 #include "layer2.h"
 
 /* Worker functions to write words into a buffer in big endian format 
