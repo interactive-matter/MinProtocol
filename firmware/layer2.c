@@ -29,7 +29,7 @@ static void encode_32(uint32_t data, uint8_t buf[])
 
 static void encode_16(uint32_t data, uint8_t buf[])
 {
-	buf[0] = (uint8_t)((data & 0x0000ff00UL) >> 8);
+	buf[0] = (uint8_t)((data & 0x0000ff00UL) >> 8);gsffdsg
 	buf[1] = (uint8_t)(data & 0x000000ffUL);
 }
 
@@ -67,9 +67,11 @@ static uint16_t decode_16(uint8_t buf[])
 #define UNPACK16(v)				((m_cursor + 2U <= m_control) ? ((v) = decode_16(m_buf + m_cursor)), m_cursor += 2U : ((v) = 0))
 #define UNPACK32(v)				((m_cursor + 4U <= m_control) ? ((v) = decode_32(m_buf + m_cursor)), m_cursor += 4U : ((v) = 0))
 	
-/* Functions called by the application to report information via MIN frames */
+/* Functions called by the application to report information via MIN frames 
 
-/* Report the current state of the environment */
+This is done in LEvel 3 - so here are some examples how that could look like:
+
+Report the current state of the environment 
 void report_environment(uint16_t temperature, uint16_t humidity)
 {
 	DECLARE_BUF(4);
@@ -80,7 +82,7 @@ void report_environment(uint16_t temperature, uint16_t humidity)
 	SEND_FRAME(MIN_ID_ENVIRONMENT);
 }
 
-/* Report the current motor position, including a status */
+// Report the current motor position, including a status 
 void report_motor(uint8_t status, uint32_t position)
 {
 	DECLARE_BUF(5);
@@ -91,7 +93,7 @@ void report_motor(uint8_t status, uint32_t position)
 	SEND_FRAME(MIN_ID_MOTOR_STATUS);
 }
 
-/* Report 0xdeadbeef as a heartbeat signal */
+// Report 0xdeadbeef as a heartbeat signal 
 void report_deadbeef(uint32_t deadbeef)
 {
 	DECLARE_BUF(4);
@@ -102,15 +104,13 @@ void report_deadbeef(uint32_t deadbeef)
 }
 
 /* Functions to unpack incoming MIN frames into application-specific data.
- */
-
+ 
 /* Example of how a MIN frame send from the host would be used to issue
  * a motor command to move to a given position at a given speed.
  * 
  * The motor_requested flag could be polled to know when to pick up the
  * position/speed setting for the motor.
- */
-
+ 
 uint32_t motor_position_request;
 uint16_t motor_speed_request;
 uint8_t motor_requested;
@@ -124,20 +124,19 @@ static void do_motor(uint8_t m_id, uint8_t m_buf[], uint8_t m_control)
 }
 
 /* Other application-specific frame-decode functions would be added here.
- */
 
 /* Provides a 'ping' service by echoing back the ping frame with
  * the same ID and payload.
- */
 static void do_ping(uint8_t m_id, uint8_t m_buf[], uint8_t m_control)
 {
 	min_tx_frame(m_id, m_buf, m_control);
 }
 
-/* Main function to process incoming bytes and pass them into MIN layer */
+/* Main function to process incoming bytes and pass them into MIN layer 
+*/
 void poll_rx_bytes(void)
 {	
-	/* Handle all the outstanding characters in the input buffer */
+	/* Handle all the outstanding characters in the input buffer 
 	while(uart_receive_ready()) {
 		uint8_t byte;
 		uart_receive(&byte, 1U);
@@ -146,7 +145,6 @@ void poll_rx_bytes(void)
 }
 
 /* Callback from MIN layer 1 to indicate the frame has been received
- */
 void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id)
 {	
     switch(id) {
@@ -163,16 +161,15 @@ void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id)
     }
 }
 
-/* Callback from MIN to send a byte over the UART (in this example, queued in a FIFO) */
+/* Callback from MIN to send a byte over the UART (in this example, queued in a FIFO) 
 void min_tx_byte(uint8_t byte)
 {
 	/* Ignore FIFO overrun issue - don't send frames faster than the FIFO can handle them
 	 * (and make sure the FIFO is big enough to take a maximum-sized MIN frame).
-	 */
 	uart_send(&byte, 1U);
 }
 
-/* Callback from MIN to see how much transmit buffer space there is */
+/* Callback from MIN to see how much transmit buffer space there is 
 uint8_t min_tx_space(void)
 {
 	return uart_send_space();
@@ -180,7 +177,7 @@ uint8_t min_tx_space(void)
 
 void init_min(void)
 {
-	/* Set MIN Layer 0 settings of 8 data bits, 1 stop bit, no parity */
+	/* Set MIN Layer 0 settings of 8 data bits, 1 stop bit, no parity 
 	init_uart(MIN_BAUD);
     min_init_layer1();
 }
