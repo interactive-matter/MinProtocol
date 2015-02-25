@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include <MinbProtocol.h>
+
+#include "MinProtocol.h"
 
 
-MinProtocol:MinProtocol(Stream & comms) {
-	this->comms = comms;
+MinProtocol::MinProtocol(Stream & ccomms) {
+	comms = &ccomms;
 }

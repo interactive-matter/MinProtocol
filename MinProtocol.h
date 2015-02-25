@@ -13,9 +13,27 @@
 	Adds an Arduino like Interface to the min protocol, trying to stick with layer 3 and reducing layer 2.
 
 */
+
+typedef char* buffer_reference;
+
+extern "C"
+{
+  // callback functions always follow the signature: void cmd(void);
+  typedef void (*minCallbackFunction) (buffer_reference buf);
+}
+#define MIN_PROTOCOL_MAXCALLBACKS        50   // The maximum number of commands   (default: 50)
+
 class MinProtocol {
+
 public:
-	MinProtocol(Stream & comms)
+	MinProtocol(Stream & ccomms);
+
+private:
+	Stream* comms; //ths communication stream
+
+	minCallbackFunction default_callback;            // default callback function  
+  	minCallbackFunction callbackList[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
+
 };
 
 #endif

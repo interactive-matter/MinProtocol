@@ -29,7 +29,7 @@ static void encode_32(uint32_t data, uint8_t buf[])
 
 static void encode_16(uint32_t data, uint8_t buf[])
 {
-	buf[0] = (uint8_t)((data & 0x0000ff00UL) >> 8);gsffdsg
+	buf[0] = (uint8_t)((data & 0x0000ff00UL) >> 8);
 	buf[1] = (uint8_t)(data & 0x000000ffUL);
 }
 
@@ -133,7 +133,6 @@ static void do_ping(uint8_t m_id, uint8_t m_buf[], uint8_t m_control)
 }
 
 /* Main function to process incoming bytes and pass them into MIN layer 
-*/
 void poll_rx_bytes(void)
 {	
 	/* Handle all the outstanding characters in the input buffer 
@@ -157,7 +156,7 @@ void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id)
         /* Other IDs would be handled in this case statement, calling the
          * application-specific functions to unpack the frames into
          * application data for passing to the rest of the application
-         */
+         
     }
 }
 
@@ -181,3 +180,4 @@ void init_min(void)
 	init_uart(MIN_BAUD);
     min_init_layer1();
 }
+*/
