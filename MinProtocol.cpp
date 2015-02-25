@@ -13,6 +13,7 @@ MinProtocol::MinProtocol(Stream & ccomms) {
 void MinProtocol::attach(minCallbackFunction newFunction)
 {
     default_callback = newFunction;
+    sending_cmd=0;
 }
 
 /**
@@ -26,4 +27,18 @@ boolean MinProtocol::attach(byte msgId, minCallbackFunction newFunction)
     } else {
     	return false;
     }
+}
+
+/**
+ * Send start of command. This makes it easy to send multiple arguments per command
+ */
+void MinProtocol::sendCmdStart(int cmdId)
+{
+    if (!sending_cmd) {
+		sending_cmd   = cmdId;
+		pause_processing = true;
+		comms->print(cmdId);
+		m_control = MIN_PROTOCOL_MESSENGERBUFFERSIZE;
+		m_cursor = 0;
+	}
 }

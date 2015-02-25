@@ -23,20 +23,13 @@
 #define MIN_ID_ENVIRONMENT				(0x23U)			/* Layer 1 frame; Temperature and humidity sensor values */
 #define MIN_ID_MOTOR_STATUS				(0x24U)			/* Layer 1 frame; Report the status of the motor */
 
-/* Motor control request from the host */
-extern uint8_t motor_requested;
-extern uint32_t motor_position_request;
-extern uint16_t motor_speed_request;
+/* some nice encoder functions*/
+static void encode_32(uint32_t data, uint8_t buf[]);
 
-/* Set up communications */
-void init_min(void);
+static void encode_16(uint32_t data, uint8_t buf[]);
 
-/* Poll the incoming uart to send bytes into MIN layer 1 */
-void poll_rx_bytes(void);
+static uint32_t decode_32(uint8_t buf[]);
 
-/* Functions to take application data and send to host */
-void report_environment(uint16_t temperature, uint16_t humidity);
-void report_motor(uint8_t status, uint32_t position);
-void report_deadbeef(uint32_t deadbeef);
+static uint16_t decode_16(uint8_t buf[]);
 
 #endif /* LAYER2_H_ */
