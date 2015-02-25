@@ -28,6 +28,8 @@ class MinProtocol {
 public:
 	MinProtocol(Stream & ccomms);
 
+	void attach (minCallbackFunction newFunction);
+  	boolean attach (byte msgId, minCallbackFunction newFunction);
 private:
 	Stream* comms; //ths communication stream
 
