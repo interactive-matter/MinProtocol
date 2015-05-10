@@ -1,11 +1,10 @@
-import queue
+from Queue import Queue
 import serial
 import threading
-import time
-import argparse
-import msvcrt           # Windows-only; on Linux use getch: https://pypi.python.org/pypi/getch
 
-__author__ = 'kentindell'
+SHOW_RAW_FOR_DEBUG = False
+
+__author__ = 'mnowotny'
 
 """
 Microcontroller Interconnect Network (MIN) version 1.0
@@ -154,7 +153,7 @@ class SerialHandler:
         self.received_frame_handler = received_frame_handler
 
         # Initialize receiver and sender threads
-        self.send_queue = queue.Queue()
+        self.send_queue = Queue()
 
         self.receive_thread = threading.Thread(target=self.receiver)
         self.send_thread = threading.Thread(target=self.sender)
@@ -172,9 +171,10 @@ class SerialHandler:
         while True:
             # Read a byte from the serial line (blocking call)
             data = self.serial.read(size=1)
-            if args.show_raw:
-                print("Data RX on wire: " + '0x{:02x}'.format(data[0]))
-            self.build_received_frame(data[0])
+            rx_byte = ord(data[0])
+            if SHOW_RAW_FOR_DEBUG:
+                print("Data RX on wire: " + '0x{:02x}'.format(rx_byte))
+            self.build_received_frame(rx_byte)
 
     def sender(self):
         """
@@ -182,7 +182,7 @@ class SerialHandler:
         """
         while True:
             frame_data = self.send_queue.get()
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("Data TX on wire: %s" % ':'.join('0x{:02x}'.format(i) for i in frame_data))
             self.serial.write(data=frame_data)
 
@@ -194,7 +194,7 @@ class SerialHandler:
             self.header_bytes_seen = 0
             if byte == Frame.HEADER_BYTE:
                 # If three header bytes in a row, reset state machine and start reading a new frame
-                if args.show_raw:
+                if SHOW_RAW_FOR_DEBUG:
                     print("Header seen")
                 self.state = SerialHandler.ID
                 return
@@ -206,7 +206,7 @@ class SerialHandler:
                 return
             else:
                 # A stuff byte, discard and carry on receiving on the next byte where we were
-                if args.show_raw:
+                if SHOW_RAW_FOR_DEBUG:
                     print("Stuff byte discarded")
                 return
 
@@ -216,15 +216,15 @@ class SerialHandler:
             self.header_bytes_seen = 0
 
         if self.state == SerialHandler.ID:
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("ID byte")
             self.frame_id = byte
             self.state = SerialHandler.CONTROL
         elif self.state == SerialHandler.CONTROL:
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("control byte")
             self.frame_length = byte & 0x0f
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("control byte %s [length=%d]"
                       % ('0b{:08b}'.format(byte),
                          self.frame_length))
@@ -235,19 +235,19 @@ class SerialHandler:
             else:
                 self.state = SerialHandler.CHECKSUM_HIGH
         elif self.state == SerialHandler.PAYLOAD:
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("payload byte")
             self.frame_payload.append(byte)
             self.payload_bytes_to_go -= 1
             if self.payload_bytes_to_go == 0:
                 self.state = SerialHandler.CHECKSUM_HIGH
         elif self.state == SerialHandler.CHECKSUM_HIGH:
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("checksum high")
             self.frame_checksum_bytes = [byte]
             self.state = SerialHandler.CHECKSUM_LOW
         elif self.state == SerialHandler.CHECKSUM_LOW:
-            if args.show_raw:
+            if SHOW_RAW_FOR_DEBUG:
                 print("checksum low")
             self.frame_checksum_bytes.append(byte)
             # Construct the frame object
@@ -263,7 +263,7 @@ class SerialHandler:
                 self.state = SerialHandler.EOF
         elif self.state == SerialHandler.EOF:
             if byte == Frame.EOF_BYTE:
-                if args.show_raw:
+                if SHOW_RAW_FOR_DEBUG:
                     print("EOF, frame passed up")
                     print(self.frame)
                 # Frame is well-formed,pass it up for handling
@@ -292,64 +292,4 @@ def min_encode_16(x):
     return [(x & 0x0000ff00) >> 8, (x & 0x000000ff)]
 
 
-# Called when a MIN frame has been received successfully from the serial line
-def received_frame(frame):
-    message_id = frame.get_id()
-    data = frame.get_payload()
 
-    if args.quiet:
-        pass
-    else:
-        if message_id == 0x0e:      # Deadbeef message
-            print("RX deadbeef: " + ':'.join('{:02x}'.format(i) for i in data))
-        elif message_id == 0x23:            # Environment message
-            temperature = -20.0 + (min_decode(data[0:2]) * 0.0625)
-            humidity = min_decode(data[2:4]) * 0.64
-            print("Environment: temperature={0}C, humidity={1}%".format(temperature, humidity))
-        elif message_id == 0x24:            # Motor status message
-            status = data[0]
-            position = min_decode(data[1:5])
-            print("Motor: status={}, position={}".format(status, position))
-        elif message_id == 0x02:
-            print("Ping received: " + ':'.join('{:02x}'.format(i) for i in data))
-
-
-# Interactive menu to send frames on a keypress
-def interactive_controller():
-    print("Interactive MIN controller:")
-    print("p        Send ping frame")
-    print("m        Send motor request")
-
-    while True:
-        ch = msvcrt.getch()
-        if ch == b'p':
-            f = Frame(controller, frame_id=0x02, payload=[0xca, 0xfe, 0xf0, 0x0d])
-            f.transmit()
-            print("Ping frame queued")
-        elif ch == b'm':
-            payload = min_encode_32(1000000) + min_encode_16(5000)
-            f = Frame(controller, frame_id=0x36, payload=payload)
-            f.transmit()
-            print("Motor request sent")
-        else:
-            pass
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="MIN controller")
-
-    parser.add_argument('-p', dest='port', default="COM4", type=str, help="Serial port, e.g. COM3")
-    parser.add_argument('-listen_only', action='store_true')
-    parser.add_argument('-baud', default=9600, type=int)
-    parser.add_argument('-show_raw', action='store_true')
-    parser.add_argument('-quiet', action='store_true')
-
-    args = parser.parse_args()
-    controller = SerialHandler(port=args.port, baudrate=args.baud, received_frame_handler=received_frame)
-
-    if args.listen_only:
-        print("Listening only")
-    else:
-        interactive_controller()
-
-    print("MIN controller running")
-    time.sleep(3600.0)

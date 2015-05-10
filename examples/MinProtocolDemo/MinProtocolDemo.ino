@@ -22,9 +22,6 @@ void loop() {
     Min.sendCmdArg(now);
     Min.sendCmdArg(time_diff);
     Min.sendCmdEnd();
-    Serial.println();
-    Serial.print("ping ");
-    Serial.println(time_diff);
     last_now = now;
   }
   

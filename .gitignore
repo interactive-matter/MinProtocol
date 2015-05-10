@@ -5,3 +5,5 @@
 *.srec
 *.eep
 *.lss
+
+.idea/
