@@ -4,7 +4,7 @@ import min_protocol
 __author__ = 'marcus'
 import argparse
 
-PING_MESSAGE = 255
+PING_MESSAGE = 0xfe
 
 # our callbacks
 def ping_received(message_id, payload):

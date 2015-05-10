@@ -1,6 +1,6 @@
 #include <MinProtocol.h>
 
-const byte info = 255;
+const byte info = 0xfe;
 const unsigned long ping_ms = 1000;
 
 void setup() {
