@@ -6,28 +6,6 @@ import argparse
 
 PING_MESSAGE = 255
 
-# Called when a MIN frame has been received successfully from the serial line
-def received_frame(frame):
-    message_id = frame.get_id()
-    data = frame.get_payload()
-
-    if args.quiet:
-        pass
-    if min_protocol.SHOW_RAW_FOR_DEBUG:
-        if message_id == 0x0e:  # Deadbeef message
-            print("RX deadbeef: " + ':'.join('{:02x}'.format(i) for i in data))
-        elif message_id == 0x23:  # Environment message
-            temperature = -20.0 + (min_protocol.min_decode(data[0:2]) * 0.0625)
-            humidity = min_protocol.min_decode(data[2:4]) * 0.64
-            print("Environment: temperature={0}C, humidity={1}%".format(temperature, humidity))
-        elif message_id == 0x24:  # Motor status message
-            status = data[0]
-            position = min_protocol.min_decode(data[1:5])
-            print("Motor: status={}, position={}".format(status, position))
-        elif message_id == 0x02:
-            print("Ping received: " + ':'.join('{:02x}'.format(i) for i in data))
-
-
 # our callbacks
 def ping_received(message_id, payload):
     time = min_protocol.min_decode(payload[0:4])
