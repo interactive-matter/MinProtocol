@@ -7,9 +7,6 @@
 #include <WProgram.h> 
 #endif
 
-#include "layer2.h"
-	
-
 /*  a lot of the high level logic is basically stolen from CmdMessenger v3 - see http://playground.arduino.cc/Code/CmdMessenger
 	Perhaps not the best structure - but at least close to the above (what can be an advantage if you replace it)
 
@@ -18,6 +15,19 @@
 */
 
 typedef char* buffer_reference;
+
+
+/* Macros for unpacking and packing MIN frames in various functions.
+ *
+ * Declaring stuff in macros like this is not pretty but it cuts down
+ * on obscure errors due to typos.
+ */
+
+#define DECLARE_UNPACK()		uint8_t m_cursor = 0
+#define UNPACK8(v)				((m_cursor < m_control) ? ((v) = m_buf[m_cursor]), m_cursor++ : ((v) = 0))
+#define UNPACK16(v)				((m_cursor + 2U <= m_control) ? ((v) = decode_16(m_buf + m_cursor)), m_cursor += 2U : ((v) = 0))
+#define UNPACK32(v)				((m_cursor + 4U <= m_control) ? ((v) = decode_32(m_buf + m_cursor)), m_cursor += 4U : ((v) = 0))
+
 
 extern "C"
 {
@@ -30,27 +40,33 @@ extern "C"
 class MinProtocol {
 
 public:
-	MinProtocol(Stream & ccomms);
+	MinProtocol();
+
+	void begin(Stream & ccomms);
 
 	void attach (minCallbackFunction newFunction);
-  	boolean attach (byte msgId, minCallbackFunction newFunction);
+  	boolean attach (uint8_t m_cmd_id, minCallbackFunction newFunction);
 
-  	void sendCmdStart (int cmdId);
-  	//we have to unwrap the commands to unwrap them
-	void sendCmdArg (char value) {
-		if (m_cursor < m_control)  {
-			m_buf[m_cursor] = (value);
-			m_cursor++;
-		}
-	}
+  	//Initiate a command
+  	void sendCmdStart(uint8_t m_cmd_id);
+
+  	//some methods to send various arguments
+  	void sendCmdArg(char value);
+  	void sendCmdArg(int value);
+  	void sendCmdArg(long value);
+  	void sendCmdArg(float value);
+  	void sendCmdArg(double value);
+
+  	//finish the command
+  	void sendCmdEnd();
+
 private:
-	Stream* comms; //ths communication stream
-
+	//the id of the command to send
+	uint8_t m_cmd_id;
 	//buffer and pointers for sending commands
-	char m_buf[MIN_PROTOCOL_MESSENGERBUFFERSIZE];
+	uint8_t m_buf[MIN_PROTOCOL_MESSENGERBUFFERSIZE];
 	uint8_t m_control;
 	uint8_t m_cursor;
-	uint8_t sending_cmd;
 
 	//state stuff
 	//TODO isnt' this  a bitfield?
@@ -60,5 +76,8 @@ private:
   	minCallbackFunction callbackList[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
 
 };
+
+//we have a singleton protocol instance for now
+extern MinProtocol Min;
 
 #endif

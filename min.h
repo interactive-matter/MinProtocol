@@ -15,7 +15,7 @@
 #define MAX_FRAME_PAYLOAD_SIZE		(15U)
 
 /* Initialize Layer 1 */
-void min_init_layer1(void);
+void min_init_layer1();
 
 /* Called by Layer 2 to transmit a MIN Layer 1 frame */
 void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control);			

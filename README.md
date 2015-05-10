@@ -6,6 +6,9 @@ details:
 
 http://github.com/min-protocol/min/wiki
 
+This version has been slightly adapted for Arduino Serial communicationa and to look a bit like
+CmdMessenger https://github.com/thijse/Arduino-CmdMessenger
+
 File structure:
 
 	firmware/				Embedded C code
@@ -13,11 +16,8 @@ File structure:
 			layer1.c		MIN 1.0 reference implementation
 			min.h			API definition
 		main.c				Test program
-		serial.h			Serial handler for ATmega640 USART
-		serial.c
-		layer2.h			Application layer for example program
-		layer2.c
-		main.c				Example program
+		layer2_helper.h			Application layer for example program
+		layer2_helper.c
 			
 	host/					Python code
 		min.py				MIN 1.0 reference implementation (in Frame and SerialHandler classes)

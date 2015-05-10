@@ -1,11 +1,17 @@
 /* Reference implementation of Layer 1 (frame) of MIN 1.0
+ * Adapted to use Arduino Streams
  * 
- * Author: Ken Tindell
+ * Author: Ken Tindell, Marcus Nowotny
  * Copyright (c) 2014-2015 JK Energy Ltd.
  * Licensed under MIT License.
  */
 
 #include "min.h"
+#if ARDUINO >= 100
+#include <Arduino.h> 
+#else
+#include <WProgram.h> 
+#endif
 
 /* Maximum size of a MIN frame:
  *
@@ -68,7 +74,7 @@ static uint8_t rx_frame_id;							/* ID of frame being received */
 static uint8_t rx_frame_length;						/* Length of frame */
 static uint8_t rx_control;							/* Control byte */
 
-void min_init_layer1(void)
+void min_init_layer1()
 {
     rx_header_bytes_seen = 0;
     rx_frame_state = SEARCHING_FOR_SOF;
