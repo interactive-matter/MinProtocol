@@ -11,7 +11,11 @@ MinProtocol Min = MinProtocol();
 Stream* comms; //the global communication stream
 
 MinProtocol::MinProtocol() {
-    //nothing to do for now
+    //clear the callback list
+    default_callback=NULL;
+    for (uint8_t i=0; i<MIN_PROTOCOL_MAXCALLBACKS; i++) {
+        callback_list[i]=NULL;   
+    }
 }
 
 void MinProtocol::begin(Stream & ccomms) {
@@ -25,7 +29,6 @@ void MinProtocol::begin(Stream & ccomms) {
 void MinProtocol::attach(minCallbackFunction newFunction)
 {
     default_callback = newFunction;
-    m_cmd_id=0;
 }
 
 /**
@@ -34,7 +37,7 @@ void MinProtocol::attach(minCallbackFunction newFunction)
 boolean MinProtocol::attach(uint8_t cmd_id, minCallbackFunction newFunction)
 {
     if (cmd_id >= 0 && cmd_id < MIN_PROTOCOL_MAXCALLBACKS) {
-        callbackList[cmd_id] = newFunction;
+        callback_list[cmd_id] = newFunction;
         return true;
     } else {
     	return false;
@@ -170,8 +173,20 @@ void MinProtocol::sendCmdEnd() {
     m_cursor = 0;
 }
 
-/* Called by Layer 2 when a byte is received from its UART handler */
-void min_rx_byte(uint8_t byte);
+/**
+ * Feeds serial data over the MinProtocol
+ */
+void MinProtocol::feedinSerialData()
+{
+   uint8_t available_bytes = comms->available();
+   if (available_bytes) {
+        char rx_buffer[available_bytes];
+        comms->readBytes(rx_buffer, available_bytes);
+        for (uint8_t i=0; i<available_bytes; i++) {
+            min_rx_byte(rx_buffer[i]);
+        }
+   }
+}
 
 /* Callback; ask Layer 2 to queue a byte into its UART handler */
 void min_tx_byte(uint8_t byte) {
@@ -179,7 +194,15 @@ void min_tx_byte(uint8_t byte) {
 }                                     
 
 /* Callback; indicate to Layer 2 that a valid frame has been received */
-void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id);        
+void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id) {
+    if (Min.callback_list[id]!=NULL) {
+        Min.callback_list[id](id, buf, control);
+    } else if (Min.default_callback!=NULL) {
+        Min.default_callback(id, buf, control);
+    } else {
+        //TODO error handling
+    }
+}        
 
 /* Callback; returns to MIN the space in the transmit FIFO */
 uint8_t min_tx_space(void);

@@ -23,15 +23,15 @@
 #define MIN_ID_ENVIRONMENT				(0x23U)			/* Layer 1 frame; Temperature and humidity sensor values */
 #define MIN_ID_MOTOR_STATUS				(0x24U)			/* Layer 1 frame; Report the status of the motor */
 
-	/* some nice encoder functions*/
-	void encode_64(uint64_t* data, uint8_t buf[]);
+/* some nice encoder functions*/
+void encode_64(uint64_t* data, uint8_t buf[]);
 
-	void encode_32(uint32_t* data, uint8_t buf[]);
+void encode_32(uint32_t* data, uint8_t buf[]);
 
-	void encode_16(uint16_t* data, uint8_t buf[]);
+void encode_16(uint16_t* data, uint8_t buf[]);
 
-	uint32_t decode_32(uint8_t buf[]);
+uint32_t decode_32(uint8_t buf[]);
 
-	uint16_t decode_16(uint8_t buf[]);
+uint16_t decode_16(uint8_t buf[]);
 
 #endif /* LAYER2_H_ */

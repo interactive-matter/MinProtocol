@@ -14,8 +14,6 @@
 
 */
 
-typedef char* buffer_reference;
-
 
 /* Macros for unpacking and packing MIN frames in various functions.
  *
@@ -31,9 +29,11 @@ typedef char* buffer_reference;
 
 extern "C"
 {
+  typedef byte* buffer_reference;
   // callback functions always follow the signature: void cmd(void);
-  typedef void (*minCallbackFunction) (buffer_reference buf);
+  typedef void (*minCallbackFunction) (uint8_t id, buffer_reference buf, uint8_t buf_length);
 }
+
 #define MIN_PROTOCOL_MAXCALLBACKS        50   // The maximum number of commands   (default: 50)
 #define MIN_PROTOCOL_MESSENGERBUFFERSIZE 255   // The maximum length of the buffer (default: 64)
 
@@ -63,6 +63,12 @@ public:
   	//finish the command
   	void sendCmdEnd();
 
+  	//call this to feed in data from the serial port
+  	void feedinSerialData();
+
+	minCallbackFunction default_callback;            // default callback function  
+  	minCallbackFunction callback_list[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
+
 private:
 	//the id of the command to send
 	uint8_t m_cmd_id;
@@ -75,8 +81,6 @@ private:
 	//TODO isnt' this  a bitfield?
 	bool pause_processing;             // pauses processing of new commands, during sending
 
-	minCallbackFunction default_callback;            // default callback function  
-  	minCallbackFunction callbackList[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
 
 };
 

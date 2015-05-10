@@ -1,26 +1,47 @@
 import cmd
+import logging
 import min_protocol
 
 __author__ = 'marcus'
 import argparse
 
-PING_MESSAGE = 0xfe
+
+logging.basicConfig(level=logging.DEBUG)
+
+PING_MESSAGE = 0xf0
+READ_PIN_MESSAGE = 0x10
 
 # our callbacks
 def ping_received(message_id, payload):
     time = min_protocol.min_decode(payload[0:4])
     diff = min_protocol.min_decode(payload[4:6])
-    print "ping: %s after %s " % (time, diff)
+    if not be_quiet:
+        print "ping: %s after %s " % (time, diff)
+
+
+def digital_read_received(message_id, payload):
+    pin = int(payload[0])
+    pinmode = bool(payload[1])
+    if pinmode:
+        print "Pin %i is HIGH" % pin
+    else:
+        print "Pin %i is LOW" \
+              "" % pin
 
 
 class MinProtocolDemo(cmd.Cmd):
     def do_digital_read(self, pin):
         """digital_read [pin]
             Read the digital pin"""
-        print "not implemented for", pin
-        # payload = min_encode_32(1000000) + min_encode_16(5000)
-        # f = Frame(controller, frame_id=0x36, payload=payload)
-        # f.transmit()
+        pin = int(pin)
+        if 0 <= pin <= 18:
+            payload = [pin]
+            frame = min_protocol.Frame(serial_handler=controller,
+                                       frame_id=READ_PIN_MESSAGE,
+                                       payload=payload)
+            frame.transmit()
+        else:
+            print "There is no pin %s" % pin
 
 
 if __name__ == '__main__':
@@ -33,10 +54,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    be_quiet = args.quiet
+
     if args.show_raw:
         min_protocol.SHOW_RAW_FOR_DEBUG = True
 
     message_dispatcher = min_protocol.MinMessageDispatcher(message_callbacks={
+        READ_PIN_MESSAGE: digital_read_received,
         PING_MESSAGE: ping_received
     })
 

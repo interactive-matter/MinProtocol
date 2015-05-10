@@ -287,7 +287,10 @@ class MinMessageDispatcher(object):
         callback = self.message_callbacks.get(message_id, None)
         if callback:
             data = frame.get_payload()
-            callback(message_id, data)
+            try:
+                callback(message_id, data)
+            except Exception as e:
+                LOGGER.error("Callback for %s threw exception: %s",message_id, e, exc_info=True)
         else:
             LOGGER.warn("Ignoring unknown message id %s", message_id)
 
