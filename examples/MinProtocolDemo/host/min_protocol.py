@@ -17,6 +17,7 @@ Copyright (c) 2014-2015 JK Energy Ltd.
 Licensed under MIT License.
 """
 
+FRAME_DROPPED_PACKAGE_ID = 0xff
 
 class Frame:
     """
@@ -284,15 +285,18 @@ class MinMessageDispatcher(object):
 
     def received_frame(self, frame):
         message_id = frame.get_id()
-        callback = self.message_callbacks.get(message_id, None)
-        if callback:
-            data = frame.get_payload()
-            try:
-                callback(message_id, data)
-            except Exception as e:
-                LOGGER.error("Callback for %s threw exception: %s",message_id, e, exc_info=True)
+        if message_id == FRAME_DROPPED_PACKAGE_ID:
+            LOGGER.warn("Frame dropped")
         else:
-            LOGGER.warn("Ignoring unknown message id %s", message_id)
+            callback = self.message_callbacks.get(message_id, None)
+            if callback:
+                data = frame.get_payload()
+                try:
+                    callback(message_id, data)
+                except Exception as e:
+                    LOGGER.error("Callback for %s threw exception: %s",message_id, e, exc_info=True)
+            else:
+                LOGGER.warn("Ignoring unknown message id %s", message_id)
 
 
 # Decoder MIN network order 16-bit and 32-bit words

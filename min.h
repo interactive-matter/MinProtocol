@@ -32,4 +32,8 @@ void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id);
 /* Callback; returns to MIN the space in the transmit FIFO */
 uint8_t min_tx_space(void);
 
+/* Callback; ask Layer 2 to handle an error frame - can be left at NULL*/
+typedef void (*min_frame_dropped_function) ();
+extern min_frame_dropped_function min_frame_dropped_callback;
+
 #endif /* MIN_H_ */

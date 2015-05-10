@@ -10,6 +10,9 @@ extern "C"
 MinProtocol Min = MinProtocol();
 Stream* comms; //the global communication stream
 
+//protoype for the dropped frame callback
+void frame_dropped_callback();
+
 MinProtocol::MinProtocol() {
     //clear the callback list
     default_callback=NULL;
@@ -20,6 +23,7 @@ MinProtocol::MinProtocol() {
 
 void MinProtocol::begin(Stream & ccomms) {
 	comms = &ccomms;
+    min_frame_dropped_callback = frame_dropped_callback;
     min_init_layer1();
 }
 
@@ -204,8 +208,10 @@ void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id) {
     }
 }        
 
-/* Callback; returns to MIN the space in the transmit FIFO */
-uint8_t min_tx_space(void);
-
+void frame_dropped_callback() {
+    //send a frame to signal that something went wrong
+    Min.sendCmdStart(FRAME_DROPPED_PACKAGE_ID);
+    Min.sendCmdEnd();
+}
 
 

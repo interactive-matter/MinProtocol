@@ -43,6 +43,31 @@ class MinProtocolDemo(cmd.Cmd):
         else:
             print "There is no pin %s" % pin
 
+    def do_send_error(self, type=None):
+        """send_error [type]
+            Send one of various wrecked packages"""
+
+        if not type:
+            type = '0'
+
+        error_frames = {
+            # a wrong frame end
+            '0': [170, 170, 170, 16, 1, 10, 60, 27, 87],
+            # missing header
+            '1': [170, 170, 16, 1, 10, 60, 27, 87],
+            #a wrong length
+            '2': [170, 170, 170, 16, 1, 60, 27, 87],
+            #a wrong CRC
+            '3': [170, 170, 170, 16, 1, 10, 60, 27, 87],
+            # two missing header
+            '4': [170, 16, 1, 10, 60, 27, 87],
+        }
+        error_frame = error_frames.get(type, None)
+        if error_frame:
+            controller.send_queue.put(error_frame)
+        else:
+            print "There is no error frame ", type
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="MIN controller")
@@ -68,5 +93,8 @@ if __name__ == '__main__':
                                             received_frame_handler=message_dispatcher.received_frame)
 
     demo = MinProtocolDemo()
-    demo.cmdloop("Intro")
+    try:
+        demo.cmdloop("Intro")
+    except KeyboardInterrupt:
+        print "\n\nthanks"
 

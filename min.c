@@ -74,6 +74,9 @@ static uint8_t rx_frame_id;							/* ID of frame being received */
 static uint8_t rx_frame_length;						/* Length of frame */
 static uint8_t rx_control;							/* Control byte */
 
+//a callback to notify of dropped frames
+min_frame_dropped_function min_frame_dropped_callback=NULL;
+
 void min_init_layer1()
 {
     rx_header_bytes_seen = 0;
@@ -103,6 +106,9 @@ void min_rx_byte(uint8_t byte)
 		}
 		else {
 			/* Something has gone wrong, give up on this frame and look for header again */
+			if (min_frame_dropped_callback!=NULL) {
+				min_frame_dropped_callback();
+			}
 			rx_frame_state = SEARCHING_FOR_SOF;
 			return;
 		}
@@ -113,6 +119,7 @@ void min_rx_byte(uint8_t byte)
 	}
 	else {
 		rx_header_bytes_seen = 0;
+		//TODO if we are in SEARCHING_FOR_SOF this could be a dropped frame (perhaps some header bytes have to been seen)
 	}
 	
 	switch(rx_frame_state) {
@@ -150,7 +157,10 @@ void min_rx_byte(uint8_t byte)
         case RECEIVING_CHECKSUM_LOW:
             rx_frame_checksum |= byte;
             if(rx_frame_checksum != fletcher16_rx_finalize()) {
-                /* Frame fails the checksum and so is dropped */
+				if (min_frame_dropped_callback!=NULL) {
+					min_frame_dropped_callback();
+				}
+				/* Frame fails the checksum and so is dropped */
                 rx_frame_state = SEARCHING_FOR_SOF;
             }
             else {
@@ -162,8 +172,12 @@ void min_rx_byte(uint8_t byte)
             if(byte == 0x55u) {
                 /* Frame received OK, pass up data to handler */
                 min_frame_received(rx_frame_buf, rx_control, rx_frame_id);
-            }
-            /* else discard */
+            } else {
+            	/* else discard */
+            	if (min_frame_dropped_callback!=NULL) {
+					min_frame_dropped_callback();
+				}
+	        }
             /* Look for next frame */
             rx_frame_state = SEARCHING_FOR_SOF;
             break;

@@ -13,18 +13,7 @@
 	Adds an Arduino like Interface to the min protocol, trying to stick with layer 3 and reducing layer 2.
 
 */
-
-
-/* Macros for unpacking and packing MIN frames in various functions.
- *
- * Declaring stuff in macros like this is not pretty but it cuts down
- * on obscure errors due to typos.
- */
-
-#define DECLARE_UNPACK()		uint8_t m_cursor = 0
-#define UNPACK8(v)				((m_cursor < m_control) ? ((v) = m_buf[m_cursor]), m_cursor++ : ((v) = 0))
-#define UNPACK16(v)				((m_cursor + 2U <= m_control) ? ((v) = decode_16(m_buf + m_cursor)), m_cursor += 2U : ((v) = 0))
-#define UNPACK32(v)				((m_cursor + 4U <= m_control) ? ((v) = decode_32(m_buf + m_cursor)), m_cursor += 4U : ((v) = 0))
+#define FRAME_DROPPED_PACKAGE_ID 0xff
 
 
 extern "C"
