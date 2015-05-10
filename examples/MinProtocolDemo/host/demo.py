@@ -4,6 +4,8 @@ import min_protocol
 __author__ = 'marcus'
 import argparse
 
+PING_MESSAGE = 255
+
 # Called when a MIN frame has been received successfully from the serial line
 def received_frame(frame):
     message_id = frame.get_id()
@@ -11,7 +13,7 @@ def received_frame(frame):
 
     if args.quiet:
         pass
-    else:
+    if min_protocol.SHOW_RAW_FOR_DEBUG:
         if message_id == 0x0e:  # Deadbeef message
             print("RX deadbeef: " + ':'.join('{:02x}'.format(i) for i in data))
         elif message_id == 0x23:  # Environment message
@@ -26,6 +28,13 @@ def received_frame(frame):
             print("Ping received: " + ':'.join('{:02x}'.format(i) for i in data))
 
 
+# our callbacks
+def ping_received(message_id, payload):
+    time = min_protocol.min_decode(payload[0:4])
+    diff = min_protocol.min_decode(payload[4:6])
+    print "ping: %s after %s " % (time, diff)
+
+
 class MinProtocolDemo(cmd.Cmd):
     def do_digital_read(self, pin):
         """digital_read [pin]
@@ -33,7 +42,7 @@ class MinProtocolDemo(cmd.Cmd):
         print "not implemented for", pin
         # payload = min_encode_32(1000000) + min_encode_16(5000)
         # f = Frame(controller, frame_id=0x36, payload=payload)
-        #f.transmit()
+        # f.transmit()
 
 
 if __name__ == '__main__':
@@ -49,7 +58,12 @@ if __name__ == '__main__':
     if args.show_raw:
         min_protocol.SHOW_RAW_FOR_DEBUG = True
 
-    controller = min_protocol.SerialHandler(port=args.port, baudrate=args.baud, received_frame_handler=received_frame)
+    message_dispatcher = min_protocol.MinMessageDispatcher(message_callbacks={
+        PING_MESSAGE: ping_received
+    })
+
+    controller = min_protocol.SerialHandler(port=args.port, baudrate=args.baud,
+                                            received_frame_handler=message_dispatcher.received_frame)
 
     demo = MinProtocolDemo()
     demo.cmdloop("Intro")

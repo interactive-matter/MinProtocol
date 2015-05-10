@@ -1,4 +1,5 @@
 from Queue import Queue
+import logging
 import serial
 import threading
 
@@ -6,6 +7,7 @@ SHOW_RAW_FOR_DEBUG = False
 
 __author__ = 'mnowotny'
 
+LOGGER = logging.getLogger(__name__)
 """
 Microcontroller Interconnect Network (MIN) version 1.0
 
@@ -201,7 +203,7 @@ class SerialHandler:
             # Two in a row: we should see a stuff byte
             if byte != Frame.STUFF_BYTE:
                 # Something has gone wrong with the frame, discard and reset
-                print("Framing error: Missing stuff byte")
+                LOGGER.warn("Framing error: Missing stuff byte")
                 self.state = SerialHandler.SOF
                 return
             else:
@@ -257,7 +259,7 @@ class SerialHandler:
             checksum_bytes = self.frame.checksum()
             if checksum_bytes != self.frame_checksum_bytes:
                 # Checksum failure, drop it and look for a new one
-                print("FAILED CHECKSUM")
+                LOGGER.warn("FAILED CHECKSUM")
                 self.state = SerialHandler.SOF
             else:
                 self.state = SerialHandler.EOF
@@ -270,6 +272,24 @@ class SerialHandler:
                 self.received_frame_handler(frame=self.frame)
 
             self.state = SerialHandler.SOF
+
+
+class MinMessageDispatcher(object):
+    def __init__(self, message_callbacks=None):
+        # an callback int message_id -> callback for the payload
+        if not message_callbacks:
+            self.message_callbacks = {}
+        else:
+            self.message_callbacks = message_callbacks
+
+    def received_frame(self, frame):
+        message_id = frame.get_id()
+        callback = self.message_callbacks.get(message_id, None)
+        if callback:
+            data = frame.get_payload()
+            callback(message_id, data)
+        else:
+            LOGGER.warn("Ignoring unknown message id %s", message_id)
 
 
 # Decoder MIN network order 16-bit and 32-bit words
