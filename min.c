@@ -231,14 +231,18 @@ void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control)
 	uint16_t checksum;
 	uint8_t length = control & FRAME_LENGTH_MASK;
 
+	/*
+	this is not neccessary
 	uint8_t tx_space;
 	
 	tx_space = min_tx_space();
 	
 	/* Don't even bother trying to send if there's not guaranteed to be enough space for the frame */
+	/*
 	if(tx_space < MAX_FRAME_SIZE) {
 		return;
 	}
+	*/
 
 	tx_header_byte_countdown = 2U;
 	fletcher16_tx_init();

@@ -57,6 +57,19 @@ void MinProtocol::sendCmdStart(uint8_t cmd_id)
 }
 
     //some methods to send various arguments
+void MinProtocol::sendCmdArg(unsigned char value) {
+    if (!m_cmd_id) {
+        //TODO error handling
+        return;
+    }
+    if (m_cursor < m_control) {
+        m_buf[m_cursor] = (uint8_t)value;
+        m_cursor++;
+    } else {
+        //TODO error handling?!
+    }
+}
+
 void MinProtocol::sendCmdArg(char value) {
     if (!m_cmd_id) {
         //TODO error handling
@@ -70,6 +83,20 @@ void MinProtocol::sendCmdArg(char value) {
     }
 }
 
+void MinProtocol::sendCmdArg(unsigned int value) {
+    if (!m_cmd_id) {
+        //TODO error handling
+        return;
+    }
+    if (m_cursor + 2U <= m_control) {
+        encode_16((uint16_t*)&value, m_buf + m_cursor);
+        m_cursor += 2U;    
+    } else {
+        //TODO error handling?!
+    }
+}
+
+
 void MinProtocol::sendCmdArg(int value) {
     if (!m_cmd_id) {
         //TODO error handling
@@ -78,6 +105,19 @@ void MinProtocol::sendCmdArg(int value) {
     if (m_cursor + 2U <= m_control) {
         encode_16((uint16_t*)&value, m_buf + m_cursor);
         m_cursor += 2U;    
+    } else {
+        //TODO error handling?!
+    }
+}
+
+void MinProtocol::sendCmdArg(unsigned long value) {
+    if (!m_cmd_id) {
+        //TODO error handling
+        return;
+    }
+    if (m_cursor + 4U <= m_control) {
+        encode_32((uint32_t*)&value, m_buf + m_cursor);
+        m_cursor += 4U;     
     } else {
         //TODO error handling?!
     }
@@ -134,7 +174,9 @@ void MinProtocol::sendCmdEnd() {
 void min_rx_byte(uint8_t byte);
 
 /* Callback; ask Layer 2 to queue a byte into its UART handler */
-void min_tx_byte(uint8_t byte);                                     
+void min_tx_byte(uint8_t byte) {
+    comms->write(byte);
+}                                     
 
 /* Callback; indicate to Layer 2 that a valid frame has been received */
 void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id);        

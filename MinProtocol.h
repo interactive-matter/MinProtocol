@@ -35,7 +35,7 @@ extern "C"
   typedef void (*minCallbackFunction) (buffer_reference buf);
 }
 #define MIN_PROTOCOL_MAXCALLBACKS        50   // The maximum number of commands   (default: 50)
-#define MIN_PROTOCOL_MESSENGERBUFFERSIZE 512   // The maximum length of the buffer (default: 64)
+#define MIN_PROTOCOL_MESSENGERBUFFERSIZE 255   // The maximum length of the buffer (default: 64)
 
 class MinProtocol {
 
@@ -51,8 +51,11 @@ public:
   	void sendCmdStart(uint8_t m_cmd_id);
 
   	//some methods to send various arguments
+  	void sendCmdArg(unsigned char value);
   	void sendCmdArg(char value);
+  	void sendCmdArg(unsigned int value);
   	void sendCmdArg(int value);
+  	void sendCmdArg(unsigned long value);
   	void sendCmdArg(long value);
   	void sendCmdArg(float value);
   	void sendCmdArg(double value);
