@@ -34,6 +34,12 @@ class MinMessageCommunicationError(Exception):
         self.request_frame = request_frame
         self.answer_frame = answer_frame
 
+    def __str__(self):
+        error = 'MinMessageCommunicationError: received ',self.answer_frame
+        if self.request_frame:
+            error = error,"for ",self.request_frame
+        return error
+
 
 class MinMessageCommunicator(object):
     def __init__(self, serial_port, baud_rate, info_handlers=None, response_timeout=None):
@@ -64,7 +70,7 @@ class MinMessageCommunicator(object):
             answer = self.response_queue.get(block=True, timeout=response_timeout)
             answer_id = answer.frame_id
             if answer_id != frame_id \
-                    or answer_id & FRAME_ERROR_PACKAGE_PATTERN == FRAME_ERROR_PACKAGE_PATTERN:
+                    or answer_id >= FRAME_ERROR_PACKAGE_PATTERN:
                 raise MinMessageCommunicationError(frame, answer)
             else:
                 return answer
@@ -75,7 +81,7 @@ class MinMessageCommunicator(object):
     def received_frame(self, frame):
         try:
             frame_id = frame.frame_id
-            if frame_id & FRAME_INFO_PACKAGE_PATTERN == FRAME_INFO_PACKAGE_PATTERN:
+            if FRAME_INFO_PACKAGE_PATTERN <= frame_id < FRAME_ERROR_PACKAGE_PATTERN:
                 info_handler = self.info_handlers.get(frame_id, None)
                 if info_handler:
                     info_handler(frame)

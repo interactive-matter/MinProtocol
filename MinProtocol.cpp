@@ -96,7 +96,7 @@ void MinProtocol::sendCmdArg(unsigned int value) {
         return;
     }
     if (m_cursor + 2U <= m_control) {
-        encode_16((uint16_t*)&value, m_buf + m_cursor);
+        _encode_16((uint16_t*)&value, m_buf + m_cursor);
         m_cursor += 2U;    
     } else {
         //TODO error handling?!
@@ -110,7 +110,7 @@ void MinProtocol::sendCmdArg(int value) {
         return;
     }
     if (m_cursor + 2U <= m_control) {
-        encode_16((uint16_t*)&value, m_buf + m_cursor);
+        _encode_16((uint16_t*)&value, m_buf + m_cursor);
         m_cursor += 2U;    
     } else {
         //TODO error handling?!
@@ -123,7 +123,7 @@ void MinProtocol::sendCmdArg(unsigned long value) {
         return;
     }
     if (m_cursor + 4U <= m_control) {
-        encode_32((uint32_t*)&value, m_buf + m_cursor);
+        _encode_32((uint32_t*)&value, m_buf + m_cursor);
         m_cursor += 4U;     
     } else {
         //TODO error handling?!
@@ -136,7 +136,7 @@ void MinProtocol::sendCmdArg(long value) {
         return;
     }
     if (m_cursor + 4U <= m_control) {
-        encode_32((uint32_t*)&value, m_buf + m_cursor);
+        _encode_32((uint32_t*)&value, m_buf + m_cursor);
         m_cursor += 4U;     
     } else {
         //TODO error handling?!
@@ -149,7 +149,7 @@ void MinProtocol::sendCmdArg(float value) {
         return;
     }
     if (m_cursor + 4U <= m_control) {
-        encode_32((uint32_t*)&value, m_buf + m_cursor);
+        _encode_32((uint32_t*)&value, m_buf + m_cursor);
         m_cursor += 4U;     
     } else {
         //TODO error handling?!
@@ -193,6 +193,18 @@ void MinProtocol::feedinSerialData()
             min_rx_byte(rx_buffer[i]);
         }
    }
+}
+
+uint16_t MinProtocol::decode_16(unsigned char* buffer) {
+    return _decode_16(buffer);
+}
+
+uint32_t MinProtocol::decode_32(unsigned char* buffer) {
+    return _decode_32(buffer);
+}
+
+float MinProtocol::decode_float(unsigned char* buffer) {
+    return _decode_float(buffer);
 }
 
 /* Callback; ask Layer 2 to queue a byte into its UART handler */

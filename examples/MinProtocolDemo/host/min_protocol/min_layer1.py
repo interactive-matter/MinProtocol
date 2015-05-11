@@ -28,7 +28,7 @@ FRAME_ERROR_PACKAGE_PATTERN = 0xfc
 FRAME_INFO_ID_PACKAGE_PATTERN = 0x03
 # id to signal that frames have been dropped
 FRAME_DROPPED_PACKAGE_ID = 0xff
-#how long to wait for an response?!
+# how long to wait for an response?!
 DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT = 10.0
 #how long to wait to put a item in the queue
 MAX_QUEUE_PUT_WAIT_TIME = 10.0
@@ -291,7 +291,7 @@ class SerialHandler:
 
 
 # Decoder MIN network order 16-bit and 32-bit words
-def min_decode(data):
+def min_decode_int(data):
     if len(data) == 2:
         # 16-bit big-endian integer
         return (data[0] << 8) | (data[1])
@@ -312,7 +312,7 @@ def min_decode_float(data):
     if len(data) == 4:
         # 32-bit big-endian float
         return struct.unpack(">f", str_data)[0]
-    #elif len(data) == 8:
+        #elif len(data) == 8:
         #TODO not working - debug if needed
         # 64-bit big-endian float
     #    return struct.unpack(">d", str_data)
@@ -328,3 +328,8 @@ def min_encode_32(x):
 # Encode a 16-bit integer into MIN network order bytes
 def min_encode_16(x):
     return [(x & 0x0000ff00) >> 8, (x & 0x000000ff)]
+
+
+def min_encode_float(x):
+    str_data = struct.pack(">f", x)
+    return [ord(c) for c in str_data]

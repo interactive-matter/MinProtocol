@@ -18,7 +18,7 @@
  * instructions to get the right effect (functions declared static
  * to hint to compiler that code can be inlined)
  */
-void encode_64(uint64_t* data, uint8_t buf[])
+void _encode_64(uint64_t* data, uint8_t buf[])
 {
 	buf[0] = (uint8_t)((*data & 0xff00000000000000ULL) >> 56);
 	buf[1] = (uint8_t)((*data & 0x00ff000000000000ULL) >> 48);
@@ -30,7 +30,7 @@ void encode_64(uint64_t* data, uint8_t buf[])
 	buf[7] = (uint8_t)((*data & 0x00000000000000ffULL));
 }
 
-void encode_32(uint32_t* data, uint8_t buf[])
+void _encode_32(uint32_t* data, uint8_t buf[])
 {
 	buf[0] = (uint8_t)((*data & 0xff000000UL) >> 24);
 	buf[1] = (uint8_t)((*data & 0x00ff0000UL) >> 16);
@@ -38,13 +38,13 @@ void encode_32(uint32_t* data, uint8_t buf[])
 	buf[3] = (uint8_t)(*data & 0x000000ffUL);
 }
 
-void encode_16(uint16_t* data, uint8_t buf[])
+void _encode_16(uint16_t* data, uint8_t buf[])
 {
 	buf[0] = (uint8_t)((*data & 0x0000ff00UL) >> 8);
 	buf[1] = (uint8_t)(*data & 0x000000ffUL);
 }
 
-uint32_t decode_32(uint8_t buf[])
+uint32_t _decode_32(uint8_t buf[])
 {
 	uint32_t res;
 	
@@ -57,7 +57,7 @@ uint32_t decode_32(uint8_t buf[])
 	return res;
 } 
 
-uint16_t decode_16(uint8_t buf[])
+uint16_t _decode_16(uint8_t buf[])
 {
 	uint16_t res;
 	
@@ -67,5 +67,10 @@ uint16_t decode_16(uint8_t buf[])
 	
 	return res;
 }   
+
+float _decode_float(uint8_t buf[]) {
+	uint32_t value = _decode_32(buf);
+	return *((float*)&value);
+}
 
 	

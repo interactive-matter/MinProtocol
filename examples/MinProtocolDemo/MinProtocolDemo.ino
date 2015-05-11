@@ -1,10 +1,12 @@
 #include <MinProtocol.h>
 
 const byte info = 0xf0;
-const byte digital_read = 0x10;
-const byte pin_mode = 0x11;
-const byte analog_read = 0x12;
-const byte data_error = 0xff;
+const byte pin_mode = 0x10;
+const byte digital_read = 0x11;
+const byte digital_write = 0x12;
+const byte analog_read = 0x13;
+const byte analog_write = 0x14;
+const byte data_error = 0xfC;
 const byte encode_error = 0xff;
 const unsigned long ping_ms = 60l*1000l;
 
@@ -71,6 +73,32 @@ void digitalReadCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
   }
 }
 
+void digitalWriteCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
+  if (buf_length>1) {
+    char pin = buf[0];
+    if (0<= pin && pin<=18) {
+      char value = buf[1];
+      char result;
+      if (value != 0) {
+        digitalWrite(pin,HIGH);
+        result = 1;
+      } 
+      else {
+        digitalWrite(pin,LOW);
+        result = 0;
+      }
+      Min.sendCmdStart(digital_write);
+      Min.sendCmdArg(pin);
+      Min.sendCmdArg(result);
+      Min.sendCmdEnd();    
+    } 
+    else {
+      sendError(digital_read,1);
+    }
+  }
+}
+
+
 void analogReadCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
   if (buf_length>0) {
     char pin = buf[0];
@@ -93,6 +121,29 @@ void analogReadCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
   }
 }
 
+void analogWriteCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
+  if (buf_length>=5) {
+    char pin = buf[0];
+    if (0<= pin && pin<=5) {
+      float value = Min.decode_float(buf+1);
+      int output_value = (int) (value*255.0);
+      analogWrite(pin, output_value);
+      Min.sendCmdStart(analog_write);
+      Min.sendCmdArg(pin);
+      Min.sendCmdArg(value);
+      Min.sendCmdArg(output_value);
+      Min.sendCmdEnd();    
+    } 
+    else {
+      sendError(analog_write,1);
+    }
+  }
+  else {
+    sendError(analog_write,0);
+  }
+}
+
+
 void setup() {
   //initialize the first serial port
   Serial.begin(9600);
@@ -103,6 +154,7 @@ void setup() {
   Min.attach(digital_read, digitalReadCallback);
   Min.attach(pin_mode, pinModeCallback);
   Min.attach(analog_read, analogReadCallback);
+  Min.attach(analog_write, analogWriteCallback);
 }
 
 unsigned long last_now = millis();
@@ -122,6 +174,8 @@ void loop() {
 
 
 }
+
+
 
 
 

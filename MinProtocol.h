@@ -15,7 +15,6 @@
 */
 #define FRAME_DROPPED_PACKAGE_ID 0xff
 
-
 extern "C"
 {
   typedef byte* buffer_reference;
@@ -56,7 +55,11 @@ public:
   	//call this to feed in data from the serial port
   	void feedinSerialData();
 
-	minCallbackFunction default_callback;            // default callback function  
+    static uint32_t decode_32(uint8_t buf[]);
+    static uint16_t decode_16(uint8_t buf[]);
+    static float decode_float(uint8_t buf[]);
+
+	  minCallbackFunction default_callback;            // default callback function  
   	minCallbackFunction callback_list[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
 
 private:

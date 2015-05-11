@@ -9,15 +9,18 @@ import argparse
 
 logging.basicConfig(level=logging.DEBUG)
 
+PIN_MODE_MESSAGE = 0x10
+READ_PIN_MESSAGE = 0x11
+WRITE_PIN_MESSAGE = 0x12
+READ_PIN_ANALOG_MESSAGE = 0x13
+WRITE_PIN_ANALOG_MESSAGE = 0x14
+
 PING_MESSAGE = 0xf0
-READ_PIN_MESSAGE = 0x10
-PIN_MODE_MESSAGE = 0x11
-READ_PIN_ANALOG_MESSAGE = 0x12
 
 # our callbacks
 def ping_received(frame):
-    time = min_layer1.min_decode(frame.payload[0:4])
-    diff = min_layer1.min_decode(frame.payload[4:6])
+    time = min_layer1.min_decode_int(frame.payload[0:4])
+    diff = min_layer1.min_decode_int(frame.payload[4:6])
     if not be_quiet:
         print "ping: %s after %s " % (time, diff)
 
@@ -34,30 +37,8 @@ class MinProtocolDemo(cmd.Cmd):
             }
         )
 
-    def do_digital_read(self, pin=None):
-        """digital_read [pin]
-            Read the digital pin"""
-        if pin is None or pin is '':
-            print "No pin given"
-            return
-        pin = int(pin)
-        if 0 <= pin <= 18:
-            payload = [pin]
-            answer = self.communicator.ask_for_answer(
-                frame_id=READ_PIN_MESSAGE,
-                payload=payload
-            )
-            pin = int(answer.payload[0])
-            pinmode = bool(answer.payload[1])
-            if pinmode:
-                print "Pin %i is HIGH" % pin
-            else:
-                print "Pin %i is LOW" % pin
-        else:
-            print "There is no pin %s" % pin
-
     def do_pin_mode(self, args=None):
-        """do_pin_mode [pin] [mode]
+        """do_pin_mode [pin],[mode]
             set the output mode of the pin. Output mode can be OUTPUT, O, PULL_UP, P, INPUT, I"""
         if args is None or args is '':
             print "No arguments given"
@@ -97,8 +78,31 @@ class MinProtocolDemo(cmd.Cmd):
         else:
             print "There is no pin %s" % pin
 
-    def do_analog_read(self, pin=None):
+    def do_digital_read(self, pin=None):
         """digital_read [pin]
+            Read the digital pin"""
+        if pin is None or pin is '':
+            print "No pin given"
+            return
+        pin = int(pin)
+        if 0 <= pin <= 18:
+            payload = [pin]
+            answer = self.communicator.ask_for_answer(
+                frame_id=READ_PIN_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pinmode = bool(answer.payload[1])
+            if pinmode:
+                print "Pin %i is HIGH" % pin
+            else:
+                print "Pin %i is LOW" % pin
+        else:
+            print "There is no pin %s" % pin
+
+
+    def do_analog_read(self, pin=None):
+        """analog_read [pin]
             Read the analog pin"""
         if pin is None or pin is '':
             print "No pin given"
@@ -112,8 +116,42 @@ class MinProtocolDemo(cmd.Cmd):
             )
             pin = int(answer.payload[0])
             pin_value_float = min_layer1.min_decode_float(answer.payload[1:5])
-            pin_value_int = min_layer1.min_decode(answer.payload[5:7])
-            print "Pin %i is at %f - roughly %f" % (pin, pin_value_float, pin_value_int/100.0)
+            pin_value_int = min_layer1.min_decode_int(answer.payload[5:7])
+            print "Pin %i is at %f - roughly %f" % (pin, pin_value_float, pin_value_int / 100.0)
+
+    def do_analog_write(self, args=None):
+        """analog read [pin],[value]
+            Write the analog pin (0.0 to 1.1)"""
+        if args is None or args is '':
+            print "No arguments given"
+            return
+        arg_parts = args.split(',')
+        if not len(arg_parts) == 2:
+            print "cannot decode arguments ", args
+            return
+        pin = arg_parts[0]
+        if pin is None or pin is '':
+            print "No pin given"
+            return
+        pin = int(pin)
+        value = arg_parts[1]
+        value = float(value)
+        if value < 0:
+            print "%s is below 0 - cut to 0.0" % value
+            value = 0.
+        if value > 1:
+            print "%s is beyond 1 - cut to 1.0" % value
+            value = 1.
+        if 0 <= pin <= 5:
+            payload = [pin]+min_layer1.min_encode_float(value)
+            answer = self.communicator.ask_for_answer(
+                frame_id=WRITE_PIN_ANALOG_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pin_value_float = min_layer1.min_decode_float(answer.payload[1:5])
+            pin_output_value = min_layer1.min_decode_int(answer.payload[5:7])
+            print "Pin %i is at %f (%i)" % (pin, pin_value_float, pin_output_value)
 
 
     def do_send_error(self, type=None):
