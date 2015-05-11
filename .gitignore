@@ -5,5 +5,6 @@
 *.srec
 *.eep
 *.lss
+*.pyc
 
 .idea/
