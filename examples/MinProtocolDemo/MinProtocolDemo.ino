@@ -2,6 +2,7 @@
 
 const byte info = 0xf0;
 const byte digital_read = 0x10;
+const byte pin_mode = 0x11;
 const byte data_error = 0xff;
 const byte encode_error = 0xff;
 const unsigned long ping_ms = 60l*1000l;
@@ -21,6 +22,35 @@ void defaultCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
     Serial.write(buf[i]);
   }
   Serial.write(0xff);
+}
+
+void pinModeCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
+  if (buf_length>1) {
+    char pin = buf[0];
+    if (0<= pin && pin<=18) {
+      char mode = buf[1];
+      char result;
+      if (mode > 0) {
+        pinMode(pin,OUTPUT);
+        result = 1;
+      } 
+      else if (mode < 0) {
+        pinMode(pin,INPUT_PULLUP);
+        result = -1;
+      } 
+      else {
+        pinMode(pin,INPUT);
+        result = 0;
+      }
+      Min.sendCmdStart(pin_mode);
+      Min.sendCmdArg(pin);
+      Min.sendCmdArg(result);
+      Min.sendCmdEnd();    
+    } 
+    else {
+      sendError(digital_read,1);
+    }
+  }
 }
 
 void digitalReadCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
@@ -50,6 +80,7 @@ void setup() {
   //register the callbacks
   Min.attach(&defaultCallback);
   Min.attach(digital_read, digitalReadCallback);
+  Min.attach(pin_mode, pinModeCallback);
 }
 
 unsigned long last_now = millis();
@@ -69,5 +100,6 @@ void loop() {
 
 
 }
+
 
 

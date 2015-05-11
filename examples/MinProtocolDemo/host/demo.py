@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 PING_MESSAGE = 0xf0
 READ_PIN_MESSAGE = 0x10
+PIN_MODE_MESSAGE = 0x11
 
 # our callbacks
 def ping_received(frame):
@@ -32,9 +33,12 @@ class MinProtocolDemo(cmd.Cmd):
             }
         )
 
-    def do_digital_read(self, pin):
+    def do_digital_read(self, pin=None):
         """digital_read [pin]
             Read the digital pin"""
+        if pin is None or pin is '':
+            print "No pin given"
+            return
         pin = int(pin)
         if 0 <= pin <= 18:
             payload = [pin]
@@ -47,8 +51,48 @@ class MinProtocolDemo(cmd.Cmd):
             if pinmode:
                 print "Pin %i is HIGH" % pin
             else:
-                print "Pin %i is LOW" \
-                      "" % pin
+                print "Pin %i is LOW" % pin
+        else:
+            print "There is no pin %s" % pin
+
+    def do_pin_mode(self, args=None):
+        """do_pin_mode [pin] [mode]
+            set the output mode of the pin. Output mode can be OUTPUT, O, PULL_UP, P, INPUT, I"""
+        if args is None or args is '':
+            print "No arguments given"
+            return
+        arg_parts = args.split(',')
+        if not len(arg_parts)==2:
+            print "cannot decode arguments ", args
+            return
+        pin = arg_parts[0]
+        mode = arg_parts[1]
+        mode = mode.upper()
+        if mode in ('OUTPUT', 'OUT', 'O'):
+            output_code = 1
+        elif mode in ('INPUT', 'IN', 'I'):
+            output_code = 0
+        elif mode in ('PULL_UP', 'PU', 'P'):
+            output_code = -1
+        else:
+            print "terhe is not output mode ", mode
+            return
+        pin = int(pin)
+        if 0 <= pin <= 18:
+            payload = [pin, output_code]
+            answer = self.communicator.ask_for_answer(
+                frame_id=PIN_MODE_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pin_mode = bool(answer.payload[1])
+            if pin_mode > 0:
+                print "Pin %i is OUTPUT" % pin
+            elif pin_mode < 0:
+                print "Pin %i is INPUT with PULL UP" % pin
+            else:
+                #must be zero
+                print "Pin %i is INPUT" % pin
         else:
             print "There is no pin %s" % pin
 
