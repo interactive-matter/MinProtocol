@@ -47,7 +47,8 @@ public:
   	void sendCmdArg(unsigned long value);
   	void sendCmdArg(long value);
   	void sendCmdArg(float value);
-  	void sendCmdArg(double value);
+    //todo buggy, repair f needed
+  	//void sendCmdArg(double value);
 
   	//finish the command
   	void sendCmdEnd();

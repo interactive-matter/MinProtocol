@@ -1,6 +1,7 @@
 from Queue import Queue
 import logging
 import threading
+import struct
 
 import serial
 
@@ -25,7 +26,7 @@ FRAME_INFO_PACKAGE_PATTERN = 0xf0
 FRAME_ERROR_PACKAGE_PATTERN = 0xfc
 # the frame infor or erro number
 FRAME_INFO_ID_PACKAGE_PATTERN = 0x03
-#id to signal that frames have been dropped
+# id to signal that frames have been dropped
 FRAME_DROPPED_PACKAGE_ID = 0xff
 #how long to wait for an response?!
 DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT = 10.0
@@ -298,9 +299,23 @@ def min_decode(data):
         # 32-bit big-endian integer
         return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3])
     elif len(data) == 8:
-        # 32-bit big-endian integer
+        # 64-bit big-endian integer
         return (data[0] << 56) | (data[1] << 48) | (data[2] << 40) | (data[2] << 32) | \
                (data[3] << 24) | (data[4] << 16) | (data[5] << 8) | (data[6])
+    else:
+        raise ValueError("Cannot decode data with length %s", len(data))
+
+
+def min_decode_float(data):
+    #convert data to string for the struct unpacking
+    str_data = ''.join([chr(i) for i in data])
+    if len(data) == 4:
+        # 32-bit big-endian float
+        return struct.unpack(">f", str_data)[0]
+    #elif len(data) == 8:
+        #TODO not working - debug if needed
+        # 64-bit big-endian float
+    #    return struct.unpack(">d", str_data)
     else:
         raise ValueError("Cannot decode data with length %s", len(data))
 

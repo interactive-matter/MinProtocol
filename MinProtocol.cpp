@@ -156,6 +156,8 @@ void MinProtocol::sendCmdArg(float value) {
     }
 }
 
+/*
+TODO this does not work - but we do not need it right now - find out how to make it work
 void MinProtocol::sendCmdArg(double value) {
     if (!m_cmd_id) {
         //TODO error handling
@@ -168,6 +170,7 @@ void MinProtocol::sendCmdArg(double value) {
         //TODO error handling?!
     }
 }
+*/
 
 void MinProtocol::sendCmdEnd() {
     min_tx_frame(m_cmd_id, m_buf, m_cursor);

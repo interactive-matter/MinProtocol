@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 PING_MESSAGE = 0xf0
 READ_PIN_MESSAGE = 0x10
 PIN_MODE_MESSAGE = 0x11
+READ_PIN_ANALOG_MESSAGE = 0x12
 
 # our callbacks
 def ping_received(frame):
@@ -62,7 +63,7 @@ class MinProtocolDemo(cmd.Cmd):
             print "No arguments given"
             return
         arg_parts = args.split(',')
-        if not len(arg_parts)==2:
+        if not len(arg_parts) == 2:
             print "cannot decode arguments ", args
             return
         pin = arg_parts[0]
@@ -75,7 +76,7 @@ class MinProtocolDemo(cmd.Cmd):
         elif mode in ('PULL_UP', 'PU', 'P'):
             output_code = -1
         else:
-            print "terhe is not output mode ", mode
+            print "there is not output mode ", mode
             return
         pin = int(pin)
         if 0 <= pin <= 18:
@@ -91,10 +92,29 @@ class MinProtocolDemo(cmd.Cmd):
             elif pin_mode < 0:
                 print "Pin %i is INPUT with PULL UP" % pin
             else:
-                #must be zero
+                # must be zero
                 print "Pin %i is INPUT" % pin
         else:
             print "There is no pin %s" % pin
+
+    def do_analog_read(self, pin=None):
+        """digital_read [pin]
+            Read the analog pin"""
+        if pin is None or pin is '':
+            print "No pin given"
+            return
+        pin = int(pin)
+        if 0 <= pin <= 5:
+            payload = [pin]
+            answer = self.communicator.ask_for_answer(
+                frame_id=READ_PIN_ANALOG_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pin_value_float = min_layer1.min_decode_float(answer.payload[1:5])
+            pin_value_int = min_layer1.min_decode(answer.payload[5:7])
+            print "Pin %i is at %f - roughly %f" % (pin, pin_value_float, pin_value_int/100.0)
+
 
     def do_send_error(self, type=None):
         """send_error [type]
