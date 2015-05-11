@@ -100,6 +100,37 @@ class MinProtocolDemo(cmd.Cmd):
         else:
             print "There is no pin %s" % pin
 
+    def do_digital_write(self, args=None):
+        """do_digital_write [pin],[mode]
+            set the output value of the pin."""
+        if args is None or args is '':
+            print "No arguments given"
+            return
+        arg_parts = args.split(',')
+        if not len(arg_parts) == 2:
+            print "cannot decode arguments ", args
+            return
+        pin = arg_parts[0]
+        value = arg_parts[1]
+        value = value.upper()
+        pin = int(pin)
+        if value in ('1', 'HIGH', 'TRUE', 'ON'):
+            value = 1
+        else:
+            value = 0
+        if 0 <= pin <= 18:
+            payload = [pin, value]
+            answer = self.communicator.ask_for_answer(
+                frame_id=WRITE_PIN_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pin_value = bool(answer.payload[1])
+            if pin_value:
+                print "Pin %i is HIGH" % pin
+            else:
+                # must be zero
+                print "Pin %i is LOW" % pin
 
     def do_analog_read(self, pin=None):
         """analog_read [pin]
@@ -143,7 +174,7 @@ class MinProtocolDemo(cmd.Cmd):
             print "%s is beyond 1 - cut to 1.0" % value
             value = 1.
         if 0 <= pin <= 5:
-            payload = [pin]+min_layer1.min_encode_float(value)
+            payload = [pin] + min_layer1.min_encode_float(value)
             answer = self.communicator.ask_for_answer(
                 frame_id=WRITE_PIN_ANALOG_MESSAGE,
                 payload=payload

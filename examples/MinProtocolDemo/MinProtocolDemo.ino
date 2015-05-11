@@ -93,8 +93,11 @@ void digitalWriteCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) 
       Min.sendCmdEnd();    
     } 
     else {
-      sendError(digital_read,1);
+      sendError(digital_write,1);
     }
+  }
+  else {
+    sendError(digital_write,0);
   }
 }
 
@@ -151,8 +154,9 @@ void setup() {
   Min.begin(Serial);
   //register the callbacks
   Min.attach(&defaultCallback);
-  Min.attach(digital_read, digitalReadCallback);
   Min.attach(pin_mode, pinModeCallback);
+  Min.attach(digital_read, digitalReadCallback);
+  Min.attach(digital_write, digitalWriteCallback);
   Min.attach(analog_read, analogReadCallback);
   Min.attach(analog_write, analogWriteCallback);
 }
@@ -174,6 +178,7 @@ void loop() {
 
 
 }
+
 
 
 
