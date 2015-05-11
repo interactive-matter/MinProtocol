@@ -1,7 +1,9 @@
 from Queue import Queue
 import logging
-import serial
 import threading
+
+import serial
+
 
 SHOW_RAW_FOR_DEBUG = False
 
@@ -17,7 +19,19 @@ Copyright (c) 2014-2015 JK Energy Ltd.
 Licensed under MIT License.
 """
 
+# how does infos or errors look like
+FRAME_INFO_PACKAGE_PATTERN = 0xf0
+# how does errors look like
+FRAME_ERROR_PACKAGE_PATTERN = 0xfc
+# the frame infor or erro number
+FRAME_INFO_ID_PACKAGE_PATTERN = 0x03
+#id to signal that frames have been dropped
 FRAME_DROPPED_PACKAGE_ID = 0xff
+#how long to wait for an response?!
+DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT = 10.0
+#how long to wait to put a item in the queue
+MAX_QUEUE_PUT_WAIT_TIME = 10.0
+
 
 class Frame:
     """
@@ -275,30 +289,6 @@ class SerialHandler:
             self.state = SerialHandler.SOF
 
 
-class MinMessageDispatcher(object):
-    def __init__(self, message_callbacks=None):
-        # an callback int message_id -> callback for the payload
-        if not message_callbacks:
-            self.message_callbacks = {}
-        else:
-            self.message_callbacks = message_callbacks
-
-    def received_frame(self, frame):
-        message_id = frame.get_id()
-        if message_id == FRAME_DROPPED_PACKAGE_ID:
-            LOGGER.warn("Frame dropped")
-        else:
-            callback = self.message_callbacks.get(message_id, None)
-            if callback:
-                data = frame.get_payload()
-                try:
-                    callback(message_id, data)
-                except Exception as e:
-                    LOGGER.error("Callback for %s threw exception: %s",message_id, e, exc_info=True)
-            else:
-                LOGGER.warn("Ignoring unknown message id %s", message_id)
-
-
 # Decoder MIN network order 16-bit and 32-bit words
 def min_decode(data):
     if len(data) == 2:
@@ -307,6 +297,12 @@ def min_decode(data):
     elif len(data) == 4:
         # 32-bit big-endian integer
         return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3])
+    elif len(data) == 8:
+        # 32-bit big-endian integer
+        return (data[0] << 56) | (data[1] << 48) | (data[2] << 40) | (data[2] << 32) | \
+               (data[3] << 24) | (data[4] << 16) | (data[5] << 8) | (data[6])
+    else:
+        raise ValueError("Cannot decode data with length %s", len(data))
 
 
 # Encode a 32-bit integer into MIN network order bytes
@@ -317,6 +313,3 @@ def min_encode_32(x):
 # Encode a 16-bit integer into MIN network order bytes
 def min_encode_16(x):
     return [(x & 0x0000ff00) >> 8, (x & 0x000000ff)]
-
-
-

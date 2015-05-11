@@ -1,6 +1,7 @@
 import cmd
 import logging
-import min_protocol
+from min_protocol import min_layer1
+from min_protocol.min_layer2 import MinMessageDispatcher, MinMessageCommunicator
 
 __author__ = 'marcus'
 import argparse
@@ -12,34 +13,42 @@ PING_MESSAGE = 0xf0
 READ_PIN_MESSAGE = 0x10
 
 # our callbacks
-def ping_received(message_id, payload):
-    time = min_protocol.min_decode(payload[0:4])
-    diff = min_protocol.min_decode(payload[4:6])
+def ping_received(frame):
+    time = min_layer1.min_decode(frame.payload[0:4])
+    diff = min_layer1.min_decode(frame.payload[4:6])
     if not be_quiet:
         print "ping: %s after %s " % (time, diff)
 
 
-def digital_read_received(message_id, payload):
-    pin = int(payload[0])
-    pinmode = bool(payload[1])
-    if pinmode:
-        print "Pin %i is HIGH" % pin
-    else:
-        print "Pin %i is LOW" \
-              "" % pin
-
-
 class MinProtocolDemo(cmd.Cmd):
+    def __init__(self):
+        cmd.Cmd.__init__(self)
+
+        self.communicator = MinMessageCommunicator(
+            serial_port=serial_port,
+            baud_rate=serial_baudrate,
+            info_handlers={
+                PING_MESSAGE: ping_received,
+            }
+        )
+
     def do_digital_read(self, pin):
         """digital_read [pin]
             Read the digital pin"""
         pin = int(pin)
         if 0 <= pin <= 18:
             payload = [pin]
-            frame = min_protocol.Frame(serial_handler=controller,
-                                       frame_id=READ_PIN_MESSAGE,
-                                       payload=payload)
-            frame.transmit()
+            answer = self.communicator.ask_for_answer(
+                frame_id=READ_PIN_MESSAGE,
+                payload=payload
+            )
+            pin = int(answer.payload[0])
+            pinmode = bool(answer.payload[1])
+            if pinmode:
+                print "Pin %i is HIGH" % pin
+            else:
+                print "Pin %i is LOW" \
+                      "" % pin
         else:
             print "There is no pin %s" % pin
 
@@ -55,16 +64,16 @@ class MinProtocolDemo(cmd.Cmd):
             '0': [170, 170, 170, 16, 1, 10, 60, 27, 87],
             # missing header
             '1': [170, 170, 16, 1, 10, 60, 27, 87],
-            #a wrong length
+            # a wrong length
             '2': [170, 170, 170, 16, 1, 60, 27, 87],
-            #a wrong CRC
+            # a wrong CRC
             '3': [170, 170, 170, 16, 1, 10, 60, 27, 87],
             # two missing header
             '4': [170, 16, 1, 10, 60, 27, 87],
         }
         error_frame = error_frames.get(type, None)
         if error_frame:
-            controller.send_queue.put(error_frame)
+            self.communicator.serial_handler.send_queue.put(error_frame)
         else:
             print "There is no error frame ", type
 
@@ -82,15 +91,10 @@ if __name__ == '__main__':
     be_quiet = args.quiet
 
     if args.show_raw:
-        min_protocol.SHOW_RAW_FOR_DEBUG = True
+        min_layer1.SHOW_RAW_FOR_DEBUG = True
 
-    message_dispatcher = min_protocol.MinMessageDispatcher(message_callbacks={
-        READ_PIN_MESSAGE: digital_read_received,
-        PING_MESSAGE: ping_received
-    })
-
-    controller = min_protocol.SerialHandler(port=args.port, baudrate=args.baud,
-                                            received_frame_handler=message_dispatcher.received_frame)
+    serial_port = args.port
+    serial_baudrate = args.baud
 
     demo = MinProtocolDemo()
     try:
