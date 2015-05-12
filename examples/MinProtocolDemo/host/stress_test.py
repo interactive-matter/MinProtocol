@@ -4,7 +4,7 @@ from threading import Thread
 from time import sleep
 from demo import ping_received, PING_MESSAGE, READ_PIN_MESSAGE, READ_PIN_ANALOG_MESSAGE
 from min_protocol import min_layer1
-from min_protocol.min_layer1 import SerialHandler, SHOW_RAW_FOR_DEBUG
+from min_protocol.min_layer1 import SerialHandler
 from min_protocol.min_layer2 import MinMessageCommunicator, MinMessageCommunicationError
 
 __author__ = 'marcus'
