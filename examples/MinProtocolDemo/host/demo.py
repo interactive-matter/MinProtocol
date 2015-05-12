@@ -1,7 +1,7 @@
 import cmd
 import logging
 from min_protocol import min_layer1
-from min_protocol.min_layer2 import MinMessageDispatcher, MinMessageCommunicator
+from min_protocol.min_layer2 import MinMessageCommunicator
 
 __author__ = 'marcus'
 import argparse
@@ -185,31 +185,6 @@ class MinProtocolDemo(cmd.Cmd):
             print "Pin %i is at %f (%i)" % (pin, pin_value_float, pin_output_value)
 
 
-    def do_send_error(self, type=None):
-        """send_error [type]
-            Send one of various wrecked packages"""
-
-        if not type:
-            type = '0'
-
-        error_frames = {
-            # a wrong frame end
-            '0': [170, 170, 170, 16, 1, 10, 60, 27, 87],
-            # missing header
-            '1': [170, 170, 16, 1, 10, 60, 27, 87],
-            # a wrong length
-            '2': [170, 170, 170, 16, 1, 60, 27, 87],
-            # a wrong CRC
-            '3': [170, 170, 170, 16, 1, 10, 60, 27, 87],
-            # two missing header
-            '4': [170, 16, 1, 10, 60, 27, 87],
-        }
-        error_frame = error_frames.get(type, None)
-        if error_frame:
-            self.communicator.serial_handler.send_queue.put(error_frame)
-        else:
-            print "There is no error frame ", type
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="MIN controller")
@@ -231,7 +206,7 @@ if __name__ == '__main__':
 
     demo = MinProtocolDemo()
     try:
-        demo.cmdloop("Intro")
+        demo.cmdloop("MinProtocol tester, type \'help\' for help")
     except KeyboardInterrupt:
         print "\n\nthanks"
 

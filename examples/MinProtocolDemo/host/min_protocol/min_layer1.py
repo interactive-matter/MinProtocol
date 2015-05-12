@@ -152,7 +152,7 @@ class SerialHandler:
     # States for receiving a frame
     SOF, ID, CONTROL, PAYLOAD, CHECKSUM_HIGH, CHECKSUM_LOW, EOF = range(7)
 
-    def __init__(self, port, baudrate, received_frame_handler):
+    def __init__(self, port, baudrate, received_frame_handler, error_handler=None):
         self.header_bytes_seen = 0
         self.frame_id = 0
         self.frame_length = 0
@@ -169,6 +169,7 @@ class SerialHandler:
                                     bytesize=serial.EIGHTBITS)
 
         self.received_frame_handler = received_frame_handler
+        self.error_handler = error_handler
 
         # Initialize receiver and sender threads
         self.send_queue = Queue()
@@ -219,6 +220,8 @@ class SerialHandler:
             # Two in a row: we should see a stuff byte
             if byte != Frame.STUFF_BYTE:
                 # Something has gone wrong with the frame, discard and reset
+                if self.error_handler:
+                    self.error_handler(None)
                 LOGGER.warn("Framing error: Missing stuff byte")
                 self.state = SerialHandler.SOF
                 return
@@ -276,6 +279,8 @@ class SerialHandler:
             if checksum_bytes != self.frame_checksum_bytes:
                 # Checksum failure, drop it and look for a new one
                 LOGGER.warn("FAILED CHECKSUM")
+                if self.error_handler:
+                    self.error_handler(self.frame)
                 self.state = SerialHandler.SOF
             else:
                 self.state = SerialHandler.EOF
@@ -286,7 +291,10 @@ class SerialHandler:
                     print(self.frame)
                 # Frame is well-formed,pass it up for handling
                 self.received_frame_handler(frame=self.frame)
-
+            else:
+                #we did not see an EOF - very strange
+                if self.error_handler:
+                    self.error_handler(self.frame)
             self.state = SerialHandler.SOF
 
 

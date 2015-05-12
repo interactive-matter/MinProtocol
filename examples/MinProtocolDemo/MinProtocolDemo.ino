@@ -59,7 +59,7 @@ void digitalReadCallback(uint8_t id, buffer_reference buf, uint8_t buf_length) {
     char pin = buf[0];
     if (0<= pin && pin<=18) {
       char result = digitalRead(pin);
-      Min.sendCmdStart(analog_read);
+      Min.sendCmdStart(digital_read);
       Min.sendCmdArg(pin);
       Min.sendCmdArg(result);
       Min.sendCmdEnd();    

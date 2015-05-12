@@ -1,9 +1,16 @@
 from Queue import Queue, Empty, Full
-from min_protocol.min_layer1 import FRAME_DROPPED_PACKAGE_ID, LOGGER, DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT, Frame, \
+import logging
+from threading import Lock
+from min_protocol.min_layer1 import FRAME_DROPPED_PACKAGE_ID, DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT, Frame, \
     FRAME_INFO_PACKAGE_PATTERN, FRAME_ERROR_PACKAGE_PATTERN, MAX_QUEUE_PUT_WAIT_TIME, SerialHandler
 
 __author__ = 'marcus'
 
+COMMUNICATION_LOCK = Lock()
+
+COMMUNICATION_ERROR_FRAME = FRAME_ERROR_PACKAGE_PATTERN + 0x2
+
+LOGGER = logging.getLogger(__name__)
 
 class MinMessageDispatcher(object):
     def __init__(self, message_callbacks=None):
@@ -35,18 +42,27 @@ class MinMessageCommunicationError(Exception):
         self.answer_frame = answer_frame
 
     def __str__(self):
-        error = 'MinMessageCommunicationError: received ',self.answer_frame
+        error = 'MinMessageCommunicationError: received ', self.answer_frame
         if self.request_frame:
-            error = error,"for ",self.request_frame
+            error = error, "for ", self.request_frame
         return error
 
 
 class MinMessageCommunicator(object):
-    def __init__(self, serial_port, baud_rate, info_handlers=None, response_timeout=None):
-        self.serial_handler = SerialHandler(port=serial_port, baudrate=baud_rate,
-                                            received_frame_handler=self.received_frame)
+    def __init__(self, serial_port, baud_rate, info_handlers=None, response_timeout=None, serial_handler=None):
+        if serial_handler:
+            self.serial_handler = serial_handler
+            serial_handler.received_frame_handler = self.received_frame
+            serial_handler.error_handler = self.dropped_frame
+
+        else:
+            self.serial_handler = SerialHandler(port=serial_port, baudrate=baud_rate,
+                                                received_frame_handler=self.received_frame,
+                                                error_handler=self.dropped_frame)
 
         self.response_queue = Queue()
+        self.waiting_for_answer=False
+
         if not response_timeout:
             self.response_timeout = DEFAULT_MESSAGE_ANSWER_RESPONSE_TIMEOUT
         else:
@@ -65,18 +81,25 @@ class MinMessageCommunicator(object):
         if not response_timeout:
             response_timeout = self.response_timeout
         # todo do we have to empty the queue???
-        frame.transmit()
-        try:
-            answer = self.response_queue.get(block=True, timeout=response_timeout)
-            answer_id = answer.frame_id
-            if answer_id != frame_id \
-                    or answer_id >= FRAME_ERROR_PACKAGE_PATTERN:
-                raise MinMessageCommunicationError(frame, answer)
-            else:
-                return answer
-        except Empty:
-            # we got no answer?!
-            raise MinMessageCommunicationError(frame)
+        with COMMUNICATION_LOCK:
+            self.waiting_for_answer=True
+            frame.transmit()
+            try:
+                answer = self.response_queue.get(block=True, timeout=response_timeout)
+                answer_id = answer.frame_id
+                if answer_id != frame_id \
+                        or answer_id >= FRAME_ERROR_PACKAGE_PATTERN:
+                    raise MinMessageCommunicationError(frame, answer)
+                else:
+                    return answer
+            except Empty:
+                # we got no answer?!
+                raise MinMessageCommunicationError(frame)
+            finally:
+                self.waiting_for_answer=False
+
+    def stop(self):
+        self.serial_handler.stop()
 
     def received_frame(self, frame):
         try:
@@ -92,4 +115,11 @@ class MinMessageCommunicator(object):
         except Full:
             LOGGER.error("Unable to put an frame %s on the response queue since it is full", frame)
 
-
+    def dropped_frame(self, frame):
+        if self.waiting_for_answer:
+            error_frame = Frame(
+                serial_handler=None,
+                frame_id=COMMUNICATION_ERROR_FRAME
+            )
+            self.response_queue.put(error_frame)
+        LOGGER.error("Frame dropped")
