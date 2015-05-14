@@ -195,11 +195,11 @@ void MinProtocol::feedinSerialData()
    }
 }
 
-uint16_t MinProtocol::decode_16(unsigned char* buffer) {
+uint16_t MinProtocol::decode_int(unsigned char* buffer) {
     return _decode_16(buffer);
 }
 
-uint32_t MinProtocol::decode_32(unsigned char* buffer) {
+uint32_t MinProtocol::decode_long(unsigned char* buffer) {
     return _decode_32(buffer);
 }
 

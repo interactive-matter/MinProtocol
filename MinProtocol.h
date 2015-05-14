@@ -55,8 +55,8 @@ public:
   	//call this to feed in data from the serial port
   	void feedinSerialData();
 
-    static uint32_t decode_32(uint8_t buf[]);
-    static uint16_t decode_16(uint8_t buf[]);
+    static uint32_t decode_long(uint8_t buf[]);
+    static uint16_t decode_int(uint8_t buf[]);
     static float decode_float(uint8_t buf[]);
 
 	  minCallbackFunction default_callback;            // default callback function  
