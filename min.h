@@ -12,7 +12,11 @@
 
 #include <stdint.h>
 
-#define MAX_FRAME_PAYLOAD_SIZE		(15U)
+/* Maximum size of a MIN frame:
+ *
+ * 3 (header) + 1 (id) + 1 (control) + 15 (payload) + 2 (checksum) + 1 (EOF) + stuff bytes
+ */
+#define MAX_FRAME_PAYLOAD_SIZE		(128U)
 
 /* Initialize Layer 1 */
 void min_init_layer1();

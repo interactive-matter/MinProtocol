@@ -22,8 +22,7 @@
  *
  * Maximum size of a frame is therefore 32 bytes.
  */
-#define MAX_FRAME_SIZE					(33U)
-#define FRAME_LENGTH_MASK               (0x0fU)
+#define MAX_FRAME_SIZE					(256U)
 
 /* Magic bytes */
 #define HEADER_BYTE						(0xaaU)
