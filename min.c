@@ -132,7 +132,7 @@ void min_rx_byte(uint8_t byte)
             rx_frame_state = RECEIVING_CONTROL;
             break;
         case RECEIVING_CONTROL:
-            rx_frame_length = byte & FRAME_LENGTH_MASK;
+            rx_frame_length = byte ;
             rx_control = byte;
             fletcher16_rx_step(byte);
             if(rx_frame_length > 0) {
@@ -242,7 +242,7 @@ void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control)
 {
 	uint8_t n, i;
 	uint16_t checksum;
-	uint8_t length = control & FRAME_LENGTH_MASK;
+	uint8_t length = control ;
 
 	/*
 	this is not neccessary
