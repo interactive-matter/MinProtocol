@@ -251,8 +251,7 @@ void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control)
 	
 	tx_space = min_tx_space();
 	
-	/* Don't even bother trying to send if there's not guaranteed to be enough space for the frame */
-	/*
+	//Don't even bother trying to send if there's not guaranteed to be enough space for the frame
 	if(tx_space < MAX_FRAME_SIZE) {
 		return;
 	}
