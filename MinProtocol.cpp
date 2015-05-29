@@ -21,8 +21,9 @@ MinProtocol::MinProtocol() {
     }
 }
 
-void MinProtocol::begin(Stream & ccomms) {
+void MinProtocol::begin(Stream & ccomms, bool send_fast_ack) {
 	comms = &ccomms;
+	ack_receive = send_fast_ack;
     min_frame_dropped_callback = frame_dropped_callback;
     min_init_layer1();
 }
@@ -215,6 +216,11 @@ void min_tx_byte(uint8_t byte) {
 /* Callback; indicate to Layer 2 that a valid frame has been received */
 void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id) {
     if (Min.callback_list[id]!=NULL) {
+        if (Min.ack_receive) {
+            Min.sendCmdStart(FRAME_ACK_PACKAGE_ID);
+            Min.sendCmdArg(id);
+            Min.sendCmdEnd();
+        }
         Min.callback_list[id](id, buf, control);
     } else if (Min.default_callback!=NULL) {
         Min.default_callback(id, buf, control);

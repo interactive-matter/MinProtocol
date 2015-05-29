@@ -14,6 +14,7 @@
 
 */
 #define FRAME_DROPPED_PACKAGE_ID 0xff
+#define FRAME_ACK_PACKAGE_ID 0xef //last allowed
 
 extern "C"
 {
@@ -30,7 +31,7 @@ class MinProtocol {
 public:
 	MinProtocol();
 
-	void begin(Stream & ccomms);
+	void begin(Stream & ccomms, bool send_fast_ack=false);
 
 	void attach (minCallbackFunction newFunction);
   	boolean attach (uint8_t m_cmd_id, minCallbackFunction newFunction);
@@ -59,8 +60,9 @@ public:
     static uint16_t decode_int(uint8_t buf[]);
     static float decode_float(uint8_t buf[]);
 
-	  minCallbackFunction default_callback;            // default callback function  
+	minCallbackFunction default_callback;            // default callback function
   	minCallbackFunction callback_list[MIN_PROTOCOL_MAXCALLBACKS];  // list of attached callback functions 
+	bool ack_receive;
 
 private:
 	//the id of the command to send
