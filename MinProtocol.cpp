@@ -14,6 +14,8 @@ Stream* comms; //the global communication stream
 void frame_dropped_callback();
 
 MinProtocol::MinProtocol() {
+    //register the error callback
+    min_frame_dropped_callback = frame_dropped_callback;
     //clear the callback list
     default_callback=NULL;
     for (uint8_t i=0; i<MIN_PROTOCOL_MAXCALLBACKS; i++) {
@@ -24,7 +26,6 @@ MinProtocol::MinProtocol() {
 void MinProtocol::begin(Stream & ccomms, bool send_fast_ack) {
 	comms = &ccomms;
 	ack_receive = send_fast_ack;
-    min_frame_dropped_callback = frame_dropped_callback;
     min_init_layer1();
 }
 
@@ -214,20 +215,21 @@ void min_tx_byte(uint8_t byte) {
 }                                     
 
 /* Callback; indicate to Layer 2 that a valid frame has been received */
-void min_frame_received(uint8_t buf[], uint8_t control, uint8_t id) {
-    if (Min.callback_list[id]!=NULL) {
+void min_frame_received(uint8_t buf[], uint8_t length, uint8_t id) {
+    if ((id<MIN_PROTOCOL_MAXCALLBACKS) && (Min.callback_list[id]!=NULL)) {
         if (Min.ack_receive) {
             Min.sendCmdStart(FRAME_ACK_PACKAGE_ID);
             Min.sendCmdArg(id);
             Min.sendCmdEnd();
         }
-        Min.callback_list[id](id, buf, control);
+        Min.callback_list[id](id, buf, length);
     } else if (Min.default_callback!=NULL) {
-        Min.default_callback(id, buf, control);
+        Min.default_callback(id, buf, length);
     } else {
         //TODO error handling
     }
 }        
+
 
 void frame_dropped_callback() {
     //send a frame to signal that something went wrong
