@@ -70,8 +70,8 @@ static uint8_t rx_frame_state = SEARCHING_FOR_SOF;	/* State of receiver */
 static uint16_t rx_frame_checksum;					/* Checksum received over the wire */
 static uint8_t rx_payload_bytes;					/* Length of payload received so far */
 static uint8_t rx_frame_id;							/* ID of frame being received */
-static uint8_t rx_frame_length;						/* Length of frame */
-static uint8_t rx_control;							/* Control byte */
+static uint8_t rx_remaining_frame_length;						/* Length of frame */
+static uint8_t rx_frame_length;							/* Control byte */
 
 //a callback to notify of dropped frames
 min_frame_dropped_function min_frame_dropped_callback=NULL;
@@ -107,7 +107,7 @@ void min_rx_byte(uint8_t byte)
 			/* Something has gone wrong, give up on this frame and look for header again */
 			if (min_frame_dropped_callback!=NULL) {
 				min_frame_dropped_callback();
-			}
+		    }
 			rx_frame_state = SEARCHING_FOR_SOF;
 			return;
 		}
@@ -132,10 +132,10 @@ void min_rx_byte(uint8_t byte)
             rx_frame_state = RECEIVING_CONTROL;
             break;
         case RECEIVING_CONTROL:
-            rx_frame_length = byte ;
-            rx_control = byte;
+            rx_remaining_frame_length = byte ;
+            rx_frame_length = byte;
             fletcher16_rx_step(byte);
-            if(rx_frame_length > 0) {
+            if(rx_remaining_frame_length > 0) {
                 rx_frame_state = RECEIVING_PAYLOAD;
             }
             else {
@@ -145,7 +145,7 @@ void min_rx_byte(uint8_t byte)
         case RECEIVING_PAYLOAD:
             rx_frame_buf[rx_payload_bytes++] = byte;
             fletcher16_rx_step(byte);
-            if(--rx_frame_length == 0) {
+            if(--rx_remaining_frame_length == 0) {
                 rx_frame_state = RECEIVING_CHECKSUM_HIGH;
             }
             break;
@@ -170,7 +170,7 @@ void min_rx_byte(uint8_t byte)
         case RECEIVING_EOF:
             if(byte == 0x55u) {
                 /* Frame received OK, pass up data to handler */
-                min_frame_received(rx_frame_buf, rx_control, rx_frame_id);
+                min_frame_received(rx_frame_buf, rx_frame_length, rx_frame_id);
             } else {
             	/* else discard */
             	if (min_frame_dropped_callback!=NULL) {
@@ -238,23 +238,11 @@ static void stuffed_tx_byte(uint8_t byte)
  * the system can be quiescent until other devices have initialized).
  *
  */
-void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control)
+void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t length)
 {
 	uint8_t n, i;
 	uint16_t checksum;
-	uint8_t length = control ;
 
-	/*
-	this is not neccessary
-	uint8_t tx_space;
-	
-	tx_space = min_tx_space();
-	
-	//Don't even bother trying to send if there's not guaranteed to be enough space for the frame
-	if(tx_space < MAX_FRAME_SIZE) {
-		return;
-	}
-	*/
 
 	tx_header_byte_countdown = 2U;
 	fletcher16_tx_init();
@@ -266,7 +254,7 @@ void min_tx_frame(uint8_t id, uint8_t payload[], uint8_t control)
 
 	stuffed_tx_byte(id);
 
-	stuffed_tx_byte(control);
+	stuffed_tx_byte(length);
 
 	for(i = 0, n = length; n > 0; n--, i++) {
 		stuffed_tx_byte(payload[i]);
